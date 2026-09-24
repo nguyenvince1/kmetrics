@@ -1242,6 +1242,39 @@ deps_kmetrics.o := \
     $(wildcard include/config/PM_QOS_CPU_SYSTEM_WAKEUP) \
   /usr/src/linux-headers-7.0.0-31-generic/include/linux/plist.h \
     $(wildcard include/config/DEBUG_PLIST) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/kernel_stat.h \
+    $(wildcard include/config/GENERIC_IRQ_STAT_SNAPSHOT) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/interrupt.h \
+    $(wildcard include/config/IRQ_FORCED_THREADING) \
+    $(wildcard include/config/GENERIC_IRQ_PROBE) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/irqreturn.h \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/hardirq.h \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/context_tracking_state.h \
+    $(wildcard include/config/CONTEXT_TRACKING_USER) \
+    $(wildcard include/config/CONTEXT_TRACKING) \
+    $(wildcard include/config/RCU_DYNTICKS_TORTURE) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/ftrace_irq.h \
+    $(wildcard include/config/HWLAT_TRACER) \
+    $(wildcard include/config/OSNOISE_TRACER) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/vtime.h \
+    $(wildcard include/config/VIRT_CPU_ACCOUNTING) \
+    $(wildcard include/config/IRQ_TIME_ACCOUNTING) \
+  /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/hardirq.h \
+    $(wildcard include/config/KVM_INTEL) \
+    $(wildcard include/config/KVM) \
+    $(wildcard include/config/GUEST_PERF_EVENTS) \
+    $(wildcard include/config/X86_THERMAL_VECTOR) \
+    $(wildcard include/config/X86_MCE_THRESHOLD) \
+    $(wildcard include/config/X86_MCE_AMD) \
+    $(wildcard include/config/X86_HV_CALLBACK_VECTOR) \
+    $(wildcard include/config/HYPERV) \
+    $(wildcard include/config/X86_POSTED_MSI) \
+  /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/irq.h \
+  /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/irq_vectors.h \
+    $(wildcard include/config/PCI_MSI) \
+  /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/sections.h \
+  /usr/src/linux-headers-7.0.0-31-generic/include/asm-generic/sections.h \
+    $(wildcard include/config/HAVE_FUNCTION_DESCRIPTORS) \
 
 kmetrics.o: $(deps_kmetrics.o)
 
