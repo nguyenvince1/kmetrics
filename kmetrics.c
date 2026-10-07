@@ -1,7 +1,7 @@
 // K-METRICS: A Linux kernel module that provides system metrics such as uptime, CPU counts, and memory usage through a character device interface.
-// v0.2 by Vince Nguyen (nguyenvince1@gmail.com)
+// v0.3 by Vince Nguyen (nguyenvince1@gmail.com)
 // Work in progress. This module is intended for educational purposes and may not be suitable for production use.
-// v0.3: CPU Utilization
+// v0.4 (next): ioctl() or sysfs interface design, mutex for concurrency, kmalloc for dynamic allocation, and other improvements.
 
 #include <linux/module.h>
 #include <linux/kernel.h>
@@ -18,12 +18,18 @@
 #include <linux/jiffies.h>
 #include <linux/kernel_stat.h>
 #include <linux/mutex.h>
+#include <linux/uaccess.h>
+
+#include "kmetrics_uapi.h"
 
 #define KMETRICS_BASE_SIZE       256
 #define KMETRICS_PER_CPU_SIZE     96
 
 // Question: What is the difference between local and persistent state in kernel development? When to use local versus persistent state?
 // kmalloc versus kcalloc: One for temporary, the other persistent?
+
+// AI: Design an actual UAPI with ioctl() or sysfs interface for this module.
+// The current implementation uses a simple character device interface, which is not ideal for exposing structured data to user space.
 
 // Data structures
 struct kmetrics_cpu_sample {
@@ -156,6 +162,9 @@ static void kmetrics_sample_work(struct work_struct *work)
     struct kmetrics_cpu_sample *sample;
 	mutex_lock(&metrics_lock);
 
+
+    //  Implement a lookside cache here. Possibly find out how to implement through VM hypervisor
+
     for_each_online_cpu(cpu) {
         sample = &cpu_samples[cpu];
         // idle_us = get_cpu_idle_time_us(cpu, &wall_us); why wouldn't this work? Not available in kernel 6.5.0-rc1?
@@ -227,9 +236,41 @@ static ssize_t kmetrics_read(struct file *file,
     return ret;
 }
 
+static long kmetrics_ioctl(struct file *file,
+                           unsigned int cmd,
+                           unsigned long arg)
+{
+    struct kmetrics_cpu_snapshot snapshot;
+    // What does it mean to zero-initialize a structure? Is this for security purposes (making sure that every field starts at zero)?
+    struct kmetrics_snapshot_uapi user_snapshot = { 0 };
+
+    // Allows driver to support multiple commands
+    switch (cmd) {
+    case KMETRICS_GET_SNAPSHOT:
+        kmetrics_collect_snapshot(&snapshot);
+
+        user_snapshot.uptime_sec = snapshot.uptime_sec;
+        user_snapshot.total_mib = snapshot.total_mib;
+        user_snapshot.free_mib = snapshot.free_mib;
+        user_snapshot.online_cpus = snapshot.online_cpus;
+        user_snapshot.possible_cpus = snapshot.possible_cpus;
+        user_snapshot.present_cpus = snapshot.present_cpus;
+
+        // Why not point the arg argument to kmetrics_snapshot_uapi instead of using copy_to_user?
+        // A: That would treat a userspace pointer as if it were normal memory belonging to kernel.
+        if (copy_to_user((void __user *)arg, &user_snapshot, sizeof(user_snapshot))) {
+            return -EFAULT;
+        }
+        return 0;
+    default:
+        return -ENOTTY;
+    }
+}
+
 static const struct file_operations kmetrics_fops = {
         .owner = THIS_MODULE,
-	.read = kmetrics_read,
+	    .read = kmetrics_read,
+        .unlocked_ioctl = kmetrics_ioctl,
 };
 
 static struct miscdevice kmetrics_device = {
@@ -276,5 +317,3 @@ module_exit(kmetrics_exit);
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vince Nguyen");
 MODULE_DESCRIPTION("Computer system metrics kernel driver module. Keep building!");
-
-

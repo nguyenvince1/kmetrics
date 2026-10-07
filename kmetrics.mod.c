@@ -18,12 +18,12 @@ __section(".gnu.linkonce.this_module") = {
 
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
-	{ 0xb6d2afcd, "__num_online_cpus" },
 	{ 0xf296206e, "__num_possible_cpus" },
 	{ 0x3a645690, "__bitmap_weight" },
 	{ 0xc7ffe1aa, "si_meminfo" },
 	{ 0xd272d446, "__x86_return_thunk" },
 	{ 0xd272d446, "__stack_chk_fail" },
+	{ 0x092a35a2, "_copy_to_user" },
 	{ 0x85acaba2, "cancel_delayed_work_sync" },
 	{ 0x155e60e3, "misc_deregister" },
 	{ 0xcb8b6ec6, "kfree" },
@@ -48,17 +48,18 @@ __used __section("__versions") = {
 	{ 0x12ca6142, "ktime_get_coarse_with_offset" },
 	{ 0xf296206e, "nr_cpu_ids" },
 	{ 0xb5c51982, "__cpu_present_mask" },
+	{ 0xb6d2afcd, "__num_online_cpus" },
 	{ 0xe9196a28, "module_layout" },
 };
 
 static const u32 ____version_ext_crcs[]
 __used __section("__version_ext_crcs") = {
-	0xb6d2afcd,
 	0xf296206e,
 	0x3a645690,
 	0xc7ffe1aa,
 	0xd272d446,
 	0xd272d446,
+	0x092a35a2,
 	0x85acaba2,
 	0x155e60e3,
 	0xcb8b6ec6,
@@ -83,16 +84,17 @@ __used __section("__version_ext_crcs") = {
 	0x12ca6142,
 	0xf296206e,
 	0xb5c51982,
+	0xb6d2afcd,
 	0xe9196a28,
 };
 static const char ____version_ext_names[]
 __used __section("__version_ext_names") =
-	"__num_online_cpus\0"
 	"__num_possible_cpus\0"
 	"__bitmap_weight\0"
 	"si_meminfo\0"
 	"__x86_return_thunk\0"
 	"__stack_chk_fail\0"
+	"_copy_to_user\0"
 	"cancel_delayed_work_sync\0"
 	"misc_deregister\0"
 	"kfree\0"
@@ -117,10 +119,11 @@ __used __section("__version_ext_names") =
 	"ktime_get_coarse_with_offset\0"
 	"nr_cpu_ids\0"
 	"__cpu_present_mask\0"
+	"__num_online_cpus\0"
 	"module_layout\0"
 ;
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "8EEB3FE02E0080BEF0C1DF6");
+MODULE_INFO(srcversion, "E5CD22656B33C760436D32B");
