@@ -30,3 +30,21 @@ copy_to_user(),
 copy_from_user(),
 input validation,
 userspace CLI
+
+v0.5
+kfifo circular history buffer,
+timestamped CPU utilization samples,
+overwrite-oldest behavior when full,
+separate history mutex,
+shorter metrics_lock critical sections,
+KMETRICS_GET_HISTORY ioctl,
+kmetrics-cli history
+
+v0.6 (Next version)
+Wait queues,
+Blocking I/O,
+O_NONBLOCK,
+poll(),
+Wakeups,
+Producer/consumer synchronization,
+Multiple device interfaces
