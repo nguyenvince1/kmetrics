@@ -63,6 +63,8 @@ gcc -Wall -Wextra -O2 -o kmetrics-cli kmetrics-cli.c
 
 ./kmetrics-cli snapshot
 
+--------------------------------------------------
+
 To stress CPU usage:
 
 Open one terminal and type: yes > /dev/null
