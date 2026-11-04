@@ -4,10 +4,13 @@
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
+
 #define KMETRICS_IOC_MAGIC 'K'
 
-// __u32 and __u64 mean fixed-width integer types. Safer for an ABI shared between kernel and userspace.
-// Why __u32 and __u64? For UAPIs, should we avoid using long and unsigned long?
+
+/*
+ * General system metrics.
+ */
 struct kmetrics_snapshot_uapi {
     __u64 uptime_sec;
 
@@ -21,9 +24,37 @@ struct kmetrics_snapshot_uapi {
     __u32 reserved;
 };
 
-// IOR creates ioctol command number. Magic number is 0x01, 'K' is ioctl family.
-// IOR = "read" from kernel to userspace. The last argument is the type of data being transferred.
+
+/*
+ * Per-CPU metrics.
+ */
+struct kmetrics_cpu_uapi {
+    __u32 cpu_id;
+
+    __u32 usage_pct;
+    __u32 freq_mhz;
+
+    __u32 flags;
+
+    __u32 reserved[4];
+};
+
+
+/*
+ * Validity flags for per-CPU metrics.
+ */
+#define KMETRICS_CPU_USAGE_VALID   (1U << 0)
+#define KMETRICS_CPU_FREQ_VALID    (1U << 1)
+
+
+/*
+ * ioctl commands.
+ */
 #define KMETRICS_GET_SNAPSHOT \
     _IOR(KMETRICS_IOC_MAGIC, 0x01, struct kmetrics_snapshot_uapi)
+
+#define KMETRICS_GET_CPU \
+    _IOWR(KMETRICS_IOC_MAGIC, 0x02, struct kmetrics_cpu_uapi)
+
 
 #endif

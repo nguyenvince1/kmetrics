@@ -240,13 +240,18 @@ static long kmetrics_ioctl(struct file *file,
                            unsigned int cmd,
                            unsigned long arg)
 {
-    struct kmetrics_cpu_snapshot snapshot;
-    // What does it mean to zero-initialize a structure? Is this for security purposes (making sure that every field starts at zero)?
-    struct kmetrics_snapshot_uapi user_snapshot = { 0 };
+    void __user *argp = (void __user *)arg;
 
-    // Allows driver to support multiple commands
+    (void)file;
+
+    /* Allows driver to support multiple commands. */
     switch (cmd) {
+
     case KMETRICS_GET_SNAPSHOT:
+    {
+        struct kmetrics_cpu_snapshot snapshot;
+        struct kmetrics_snapshot_uapi user_snapshot = { 0 };
+
         kmetrics_collect_snapshot(&snapshot);
 
         user_snapshot.uptime_sec = snapshot.uptime_sec;
@@ -256,12 +261,76 @@ static long kmetrics_ioctl(struct file *file,
         user_snapshot.possible_cpus = snapshot.possible_cpus;
         user_snapshot.present_cpus = snapshot.present_cpus;
 
-        // Why not point the arg argument to kmetrics_snapshot_uapi instead of using copy_to_user?
-        // A: That would treat a userspace pointer as if it were normal memory belonging to kernel.
-        if (copy_to_user((void __user *)arg, &user_snapshot, sizeof(user_snapshot))) {
+        if (copy_to_user(argp,
+                         &user_snapshot,
+                         sizeof(user_snapshot)))
             return -EFAULT;
-        }
+
         return 0;
+    }
+
+    case KMETRICS_GET_CPU:
+    {
+        struct kmetrics_cpu_uapi cpu_data = { 0 };
+        unsigned int freq_khz;
+        unsigned int cpu_id;
+
+        // Userspace provides the requested CPU ID.
+        if (copy_from_user(&cpu_data,
+                           argp,
+                           sizeof(cpu_data)))
+            return -EFAULT;
+
+        // Save the input field before clearing the output structure.
+        
+        cpu_id = cpu_data.cpu_id;
+
+        // Do not trust output fields supplied by userspace.
+        // The kernel owns usage_pct, freq_mhz, flags, and reserved.
+
+        cpu_data = (struct kmetrics_cpu_uapi){ 0 };
+        cpu_data.cpu_id = cpu_id;
+
+        // Validate before using cpu_id as an array index.
+        if (cpu_id >= nr_cpu_ids)
+            return -EINVAL;
+
+        // CPU ID is valid but that CPU is currently offline.
+        if (!cpu_online(cpu_id))
+            return -ENODEV;
+
+        // cpu_samples[] is shared with the delayed-work sampler, so protect it with metrics_lock.
+        mutex_lock(&metrics_lock);
+
+        if (cpu_samples[cpu_id].initialized) {
+            cpu_data.usage_pct =
+                cpu_samples[cpu_id].usage_pct;
+
+            cpu_data.flags |=
+                KMETRICS_CPU_USAGE_VALID;
+        }
+
+        mutex_unlock(&metrics_lock);
+
+        // CPU frequency is independent of cpu_samples[], so metrics_lock is not needed here.
+        freq_khz = cpufreq_quick_get(cpu_id);
+
+        if (freq_khz != 0) {
+            cpu_data.freq_mhz =
+                freq_khz / 1000;
+
+            cpu_data.flags |=
+                KMETRICS_CPU_FREQ_VALID;
+        }
+
+        if (copy_to_user(argp,
+                         &cpu_data,
+                         sizeof(cpu_data)))
+            return -EFAULT;
+
+        return 0;
+    }
+
     default:
         return -ENOTTY;
     }
