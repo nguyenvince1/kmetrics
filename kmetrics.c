@@ -19,11 +19,13 @@
 #include <linux/kernel_stat.h>
 #include <linux/mutex.h>
 #include <linux/uaccess.h>
+#include <linux/kfifo.h>
 
 #include "kmetrics_uapi.h"
 
 #define KMETRICS_BASE_SIZE       256
 #define KMETRICS_PER_CPU_SIZE     96
+#define KMETRICS_HISTORY_SIZE 256
 
 // Question: What is the difference between local and persistent state in kernel development? When to use local versus persistent state?
 // kmalloc versus kcalloc: One for temporary, the other persistent?
@@ -49,11 +51,25 @@ struct kmetrics_cpu_snapshot {
     u64 free_mib;
 };
 
-// Persistent driver state - perhaps this could also be modularized and converted to struct?
+//v0.5
+struct kmetrics_history_entry {
+    u64 timestamp_ns;
+    unsigned int cpu_id;
+    unsigned int usage_pct;
+};
+
 static struct kmetrics_cpu_sample *cpu_samples;
-// Have a concurrency issue? Use a mutex to protect access to shared data structures.
+
+// We would want to protect each lock and treat them as separate entity.
 static DEFINE_MUTEX(metrics_lock);
+static DEFINE_MUTEX(history_lock);
+
 static struct delayed_work sample_work;
+
+// DEFINE_KFIFO satisfies 2^n requirement.
+static DEFINE_KFIFO(history_fifo,
+                    struct kmetrics_history_entry,
+                    KMETRICS_HISTORY_SIZE);
 
 // Metric collection
 static void kmetrics_collect_snapshot(struct kmetrics_cpu_snapshot *snapshot)
@@ -141,10 +157,30 @@ static int kmetrics_append_cpu_usage(char *output,
                              cpu);
         }
     }
-
     mutex_unlock(&metrics_lock);
-
     return len;
+}
+
+static void kmetrics_history_push(u64 timestamp_ns,
+                                  unsigned int cpu_id,
+                                  unsigned int usage_pct)
+{
+    struct kmetrics_history_entry entry;
+
+    entry.timestamp_ns = timestamp_ns;
+    entry.cpu_id = cpu_id;
+    entry.usage_pct = usage_pct;
+
+    mutex_lock(&history_lock);
+
+    // kfifo_put() normally fails if the FIFO is full. For a metrics history buffer, we prefer to discard
+    // the oldest *sample* and preserve the newest one. (FIFO)
+
+    if (kfifo_is_full(&history_fifo))
+        kfifo_skip(&history_fifo);
+
+    kfifo_put(&history_fifo, entry);
+    mutex_unlock(&history_lock);
 }
 
 // Background sampling - mutex
@@ -159,42 +195,64 @@ static void kmetrics_sample_work(struct work_struct *work)
     u64 delta_wall;
     u64 busy_us;
 
+    u64 timestamp_ns;
+    unsigned int usage_pct;
+    bool usage_valid;
     struct kmetrics_cpu_sample *sample;
-	mutex_lock(&metrics_lock);
 
+    (void)work;
 
-    //  Implement a lookside cache here. Possibly find out how to implement through VM hypervisor
+    // Give all samples from this sampling cycle approximately the same timestamp.
 
+    timestamp_ns = ktime_get_boottime_ns();
     for_each_online_cpu(cpu) {
-        sample = &cpu_samples[cpu];
-        // idle_us = get_cpu_idle_time_us(cpu, &wall_us); why wouldn't this work? Not available in kernel 6.5.0-rc1?
-		idle_us = get_cpu_idle_time(cpu, &wall_us, 1);
+        usage_valid = false;
+        usage_pct = 0;
 
-		// Reading sample values and calculating CPU usage percentage
-		// Question: Why check for backward counters in this case? Is it possible for the counters to go backward?
+        // Read current accounting before taking our own lock.
+        idle_us = get_cpu_idle_time(cpu,
+                                    &wall_us,
+                                    1);
+        mutex_lock(&metrics_lock);
+        sample = &cpu_samples[cpu];
+
         if (sample->initialized) {
-            if (wall_us >= sample->prev_wall_us && idle_us >= sample->prev_idle_us) {
+
+            if (wall_us >= sample->prev_wall_us &&
+                idle_us >= sample->prev_idle_us) {
+
                 delta_wall = wall_us - sample->prev_wall_us;
                 delta_idle = idle_us - sample->prev_idle_us;
-				// Question: Normally, idle time <= elapsed wall time. What about for rounding and wrap-around anomalies (negatives in an unsigned context)?
+
                 if (delta_wall > 0) {
                     if (delta_idle >= delta_wall)
                         busy_us = 0;
                     else
-                        busy_us = delta_wall - delta_idle;
-					// CPU percent usage calculation
-                    sample->usage_pct =(unsigned int)((busy_us * 100) / delta_wall);
+                        busy_us =
+                            delta_wall - delta_idle;
+                    usage_pct = (unsigned int)((busy_us * 100) / delta_wall);
+                    sample->usage_pct = usage_pct;
+                    usage_valid = true;
                 }
             }
         } else {
             sample->initialized = true;
         }
+
         sample->prev_idle_us = idle_us;
         sample->prev_wall_us = wall_us;
+
+        mutex_unlock(&metrics_lock);
+
+        // Kmetrics History is protected separately.
+        if (usage_valid) {
+            kmetrics_history_push(timestamp_ns,
+                                  cpu,
+                                  usage_pct);
+        }
     }
-	// Why should we unlock the mutex before scheduling the next work?
-	mutex_unlock(&metrics_lock);
-    schedule_delayed_work(&sample_work, msecs_to_jiffies(1000));
+    schedule_delayed_work(&sample_work,
+                          msecs_to_jiffies(1000));
 }
 
 static ssize_t kmetrics_read(struct file *file,
@@ -241,12 +299,10 @@ static long kmetrics_ioctl(struct file *file,
                            unsigned long arg)
 {
     void __user *argp = (void __user *)arg;
-
     (void)file;
 
     /* Allows driver to support multiple commands. */
     switch (cmd) {
-
     case KMETRICS_GET_SNAPSHOT:
     {
         struct kmetrics_cpu_snapshot snapshot;
@@ -331,6 +387,35 @@ static long kmetrics_ioctl(struct file *file,
         return 0;
     }
 
+    case KMETRICS_GET_HISTORY:
+    {
+        struct kmetrics_history_uapi history = { 0 };
+        struct kmetrics_history_entry entry;
+        unsigned int i = 0;
+
+        mutex_lock(&history_lock);
+
+        while (i < KMETRICS_HISTORY_BATCH &&
+            kfifo_get(&history_fifo, &entry)) {
+
+            history.samples[i].timestamp_ns = entry.timestamp_ns;
+            history.samples[i].cpu_id = entry.cpu_id;
+            history.samples[i].usage_pct = entry.usage_pct;
+
+            i++;
+        }
+
+        mutex_unlock(&history_lock);
+
+        history.count = i;
+
+        if (copy_to_user(argp,
+                        &history,
+                        sizeof(history)))
+            return -EFAULT;
+
+        return 0;
+    }
     default:
         return -ENOTTY;
     }

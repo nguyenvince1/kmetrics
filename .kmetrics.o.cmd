@@ -1275,6 +1275,7 @@ deps_kmetrics.o := \
   /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/sections.h \
   /usr/src/linux-headers-7.0.0-31-generic/include/asm-generic/sections.h \
     $(wildcard include/config/HAVE_FUNCTION_DESCRIPTORS) \
+  /usr/src/linux-headers-7.0.0-31-generic/include/linux/kfifo.h \
   kmetrics_uapi.h \
 
 kmetrics.o: $(deps_kmetrics.o)
