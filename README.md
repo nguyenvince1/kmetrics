@@ -1,3 +1,4 @@
+Kmetrics version history tracking:
 v0.1
 ────
 Character device,
@@ -50,3 +51,16 @@ poll(),
 Wakeups,
 Producer/consumer synchronization,
 Multiple device interfaces
+--------------------------------------------------
+How to use CLI:
+gcc -Wall -Wextra -O2 -o kmetrics-cli kmetrics-cli.c
+./kmetrics-cli history
+./kmetrics-cli snapshot
+
+To stress CPU usage:
+Open one terminal and type: yes > /dev/null
+On another terminal: enter
+./kmetrics-cli cpu 0
+./kmetrics-cli cpu 1
+./kmetrics-cli cpu 2
+./kmetrics-cli cpu 3
