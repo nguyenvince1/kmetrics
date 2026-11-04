@@ -1,7 +1,7 @@
 // K-METRICS: A Linux kernel module that provides system metrics such as uptime, CPU counts, and memory usage through a character device interface.
-// v0.3 by Vince Nguyen (nguyenvince1@gmail.com)
+// v0.5 by Vince Nguyen (nguyenvince1@gmail.com)
 // Work in progress. This module is intended for educational purposes and may not be suitable for production use.
-// v0.4 (next): ioctl() or sysfs interface design, mutex for concurrency, kmalloc for dynamic allocation, and other improvements.
+// v0.6 (next): Introduce wait queues, blocking I/O interference, polling, wakeups, and multi-device interfaces.
 
 #include <linux/module.h>
 #include <linux/kernel.h>
