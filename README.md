@@ -6,14 +6,13 @@ uptime
 CPU topology
 memory
 
-       ↓
+
 
 v0.2
 ────
 CPUFreq
 per-CPU iteration
 
-       ↓
 
 v0.3
 ────
@@ -23,7 +22,6 @@ persistent state
 kmalloc/kcalloc
 mutexes
 
-       ↓
 
 v0.4
 ────
