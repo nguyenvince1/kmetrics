@@ -32,6 +32,7 @@ input validation,
 userspace CLI
 
 v0.5
+────
 kfifo circular history buffer,
 timestamped CPU utilization samples,
 overwrite-oldest behavior when full,
@@ -41,6 +42,7 @@ KMETRICS_GET_HISTORY ioctl,
 kmetrics-cli history
 
 v0.6 (Next version)
+────
 Wait queues,
 Blocking I/O,
 O_NONBLOCK,
