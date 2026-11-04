@@ -1,4 +1,5 @@
 Kmetrics version history tracking:
+
 v0.1
 ────
 Character device,
@@ -42,7 +43,7 @@ shorter metrics_lock critical sections,
 KMETRICS_GET_HISTORY ioctl,
 kmetrics-cli history
 
-v0.6 (Next version)
+**v0.6 (Next version)
 ────
 Wait queues,
 Blocking I/O,
@@ -51,7 +52,7 @@ poll(),
 Wakeups,
 Producer/consumer synchronization,
 Multiple device interfaces
---------------------------------------------------
+--------------------------------------------------**
 How to use CLI:
 gcc -Wall -Wextra -O2 -o kmetrics-cli kmetrics-cli.c
 ./kmetrics-cli history
