@@ -27,12 +27,13 @@ __used __section("__versions") = {
 	{ 0x155e60e3, "misc_deregister" },
 	{ 0xcb8b6ec6, "kfree" },
 	{ 0xe8213e80, "_printk" },
+	{ 0x092a35a2, "_copy_to_user" },
 	{ 0x092a35a2, "_copy_from_user" },
 	{ 0xb5c51982, "__cpu_online_mask" },
 	{ 0x9aa6980d, "mutex_lock" },
 	{ 0x9aa6980d, "mutex_unlock" },
 	{ 0xecfe08b6, "cpufreq_quick_get" },
-	{ 0x092a35a2, "_copy_to_user" },
+	{ 0x90a48d82, "__ubsan_handle_out_of_bounds" },
 	{ 0xe4de56b4, "__ubsan_handle_load_invalid_value" },
 	{ 0xd710adbf, "__kmalloc_noprof" },
 	{ 0x71798f7e, "delayed_work_timer_fn" },
@@ -43,6 +44,7 @@ __used __section("__versions") = {
 	{ 0x40a621c5, "scnprintf" },
 	{ 0x86632fd6, "_find_next_bit" },
 	{ 0x437e81c7, "simple_read_from_buffer" },
+	{ 0x12ca6142, "ktime_get_with_offset" },
 	{ 0x47892a40, "get_cpu_idle_time" },
 	{ 0xd272d446, "__fentry__" },
 	{ 0xbd03ed67, "__ref_stack_chk_guard" },
@@ -65,11 +67,12 @@ __used __section("__version_ext_crcs") = {
 	0xcb8b6ec6,
 	0xe8213e80,
 	0x092a35a2,
+	0x092a35a2,
 	0xb5c51982,
 	0x9aa6980d,
 	0x9aa6980d,
 	0xecfe08b6,
-	0x092a35a2,
+	0x90a48d82,
 	0xe4de56b4,
 	0xd710adbf,
 	0x71798f7e,
@@ -80,6 +83,7 @@ __used __section("__version_ext_crcs") = {
 	0x40a621c5,
 	0x86632fd6,
 	0x437e81c7,
+	0x12ca6142,
 	0x47892a40,
 	0xd272d446,
 	0xbd03ed67,
@@ -100,12 +104,13 @@ __used __section("__version_ext_names") =
 	"misc_deregister\0"
 	"kfree\0"
 	"_printk\0"
+	"_copy_to_user\0"
 	"_copy_from_user\0"
 	"__cpu_online_mask\0"
 	"mutex_lock\0"
 	"mutex_unlock\0"
 	"cpufreq_quick_get\0"
-	"_copy_to_user\0"
+	"__ubsan_handle_out_of_bounds\0"
 	"__ubsan_handle_load_invalid_value\0"
 	"__kmalloc_noprof\0"
 	"delayed_work_timer_fn\0"
@@ -116,6 +121,7 @@ __used __section("__version_ext_names") =
 	"scnprintf\0"
 	"_find_next_bit\0"
 	"simple_read_from_buffer\0"
+	"ktime_get_with_offset\0"
 	"get_cpu_idle_time\0"
 	"__fentry__\0"
 	"__ref_stack_chk_guard\0"
@@ -129,4 +135,4 @@ __used __section("__version_ext_names") =
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "2D1E5D740C1A032F7D9483B");
+MODULE_INFO(srcversion, "8821A612FEDF56FFDCB2E6C");

@@ -6,6 +6,7 @@
 
 
 #define KMETRICS_IOC_MAGIC 'K'
+#define KMETRICS_HISTORY_BATCH 32
 
 
 /*
@@ -24,10 +25,7 @@ struct kmetrics_snapshot_uapi {
     __u32 reserved;
 };
 
-
-/*
- * Per-CPU metrics.
- */
+// Per-CPU metrics.
 struct kmetrics_cpu_uapi {
     __u32 cpu_id;
 
@@ -39,22 +37,34 @@ struct kmetrics_cpu_uapi {
     __u32 reserved[4];
 };
 
+struct kmetrics_history_sample_uapi {
+    __u64 timestamp_ns;
 
-/*
- * Validity flags for per-CPU metrics.
- */
+    __u32 cpu_id;
+    __u32 usage_pct;
+};
+
+struct kmetrics_history_uapi {
+    __u32 count;
+    __u32 reserved;
+
+    struct kmetrics_history_sample_uapi
+        samples[KMETRICS_HISTORY_BATCH];
+};
+
+// Validity flags for per-CPU metrics.
 #define KMETRICS_CPU_USAGE_VALID   (1U << 0)
 #define KMETRICS_CPU_FREQ_VALID    (1U << 1)
 
 
-/*
- * ioctl commands.
- */
+// ioctl commands
 #define KMETRICS_GET_SNAPSHOT \
     _IOR(KMETRICS_IOC_MAGIC, 0x01, struct kmetrics_snapshot_uapi)
 
 #define KMETRICS_GET_CPU \
     _IOWR(KMETRICS_IOC_MAGIC, 0x02, struct kmetrics_cpu_uapi)
 
+#define KMETRICS_GET_HISTORY \
+    _IOR(KMETRICS_IOC_MAGIC, 0x03, struct kmetrics_history_uapi)
 
 #endif

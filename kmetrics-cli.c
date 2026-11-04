@@ -78,6 +78,49 @@ static int show_cpu(int fd, unsigned int cpu_id)
     return EXIT_SUCCESS;
 }
 
+static int show_history(int fd)
+{
+    struct kmetrics_history_uapi history = { 0 };
+
+    unsigned int i;
+
+    if (ioctl(fd,
+              KMETRICS_GET_HISTORY,
+              &history) < 0) {
+
+        perror("KMETRICS_GET_HISTORY");
+        return EXIT_FAILURE;
+    }
+
+    printf("KMetrics CPU History\n");
+    printf("--------------------\n");
+
+    if (history.count == 0) {
+        printf("No history available.\n");
+        return EXIT_SUCCESS;
+    }
+
+    for (i = 0; i < history.count; i++) {
+
+        unsigned long long seconds;
+        unsigned long long milliseconds;
+
+        seconds =
+            history.samples[i].timestamp_ns / 1000000000ULL;
+
+        milliseconds =
+            (history.samples[i].timestamp_ns % 1000000000ULL) / 1000000ULL;
+
+        printf("%llu.%03llu s  CPU%-2u  %3u%%\n",
+               seconds,
+               milliseconds,
+               history.samples[i].cpu_id,
+               history.samples[i].usage_pct);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
     int fd;
@@ -90,17 +133,32 @@ int main(int argc, char **argv)
         return EXIT_FAILURE;
     }
 
-    if (argc == 2 && strcmp(argv[1], "snapshot") == 0) {
+    // ./kmetrics-cli snapshot
+    if (argc == 2 &&
+        strcmp(argv[1], "snapshot") == 0) {
+
         ret = show_snapshot(fd);
-    } else if (argc == 3 && strcmp(argv[1], "cpu") == 0) {
+    }
+
+    // ./kmetrics-cli history
+    else if (argc == 2 &&
+             strcmp(argv[1], "history") == 0) {
+
+        ret = show_history(fd);
+    }
+
+    // kmetrics-cli cpu <id>
+    // Example: ./kmetrics-cli cpu 3
+    else if (argc == 3 &&
+             strcmp(argv[1], "cpu") == 0) {
+
         char *end;
         unsigned long cpu_id;
 
-        cpu_id = strtoul(argv[2],
-                         &end,
-                         10);
+        cpu_id = strtoul(argv[2], &end, 10);
 
-        if (*end != '\0') {
+        // Valid number verification
+        if (*argv[2] == '\0' || *end != '\0') {
             fprintf(stderr,
                     "Invalid CPU ID: %s\n",
                     argv[2]);
@@ -108,18 +166,21 @@ int main(int argc, char **argv)
             close(fd);
             return EXIT_FAILURE;
         }
-        ret = show_cpu(fd,
-                       (unsigned int)cpu_id);
-    } else {
+        ret = show_cpu(fd, (unsigned int)cpu_id);
+    }
+
+    // Invalid command or incorrect argument count.
+    else {
         fprintf(stderr,
                 "Usage:\n"
                 "  %s snapshot\n"
-                "  %s cpu <id>\n",
+                "  %s cpu <id>\n"
+                "  %s history\n",
+                argv[0],
                 argv[0],
                 argv[0]);
         ret = EXIT_FAILURE;
     }
-
     close(fd);
     return ret;
 }
